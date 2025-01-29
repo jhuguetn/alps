@@ -243,6 +243,10 @@ if [ $skip -eq 0 ]; then
 	cd "${outdir}"
 
 	## Denoising and/or unringing
+	nvols1="$(fslnvols $dwi1)"
+    if [ $nvols1 -le 1 ]; then
+        echo "WARNING! Cannot run dwidenoise on 3D data"
+    fi
 	if [ $denoise -ne 0 ]; then
 		if [ $denoise -eq 1 ]; then
 			echo "Denoising and unringing $dwi1"
@@ -298,6 +302,10 @@ if [ $skip -eq 0 ]; then
 		if [ "$dwi2" ]; then
 			echo "2nd DWI is available"
 			#if [[ "$dwi2" == *".nii" ]]; then gzip "$dwi2"; fi
+			nvols2="$(fslnvols $dwi2)"
+			if [ $nvols2 -le 1 ]; then
+				echo "WARNING! Cannot run dwidenoise on 3D data"
+			fi
 			if [ $denoise -eq 1 ]; then
 				echo "Denoising and unringing $dwi2"
 				dwidenoise "$dwi2" "${outdir}/dwi2.denoised.nii.gz"
@@ -530,7 +538,18 @@ then
 			#bet2 "${outdir}/${smri}.nii.gz" "${outdir}/${smri}_brain" -m #this is used for flirt dti2struct and flirt struct2template
 			#flirt -ref "${outdir}/${smri}_brain.nii.gz" -in "${outdir}/dti_FA.nii.gz" -dof 6 -omat "${outdir}/dti2struct.mat"
    			if [ $weight == "1" ]; then
-				flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -dof 6 -out "${outdir}/dti_FA_2_${smri}.nii.gz" -omat "${outdir}/dti2struct.mat"
+   			    if [ -f "${outdir}/wm.nii.gz" ] && [ -f "${outdir}/gm.nii.gz" ] && [ -f "${outdir}/b0.nii.gz" ]; then
+                    ### Perform a enhanced two-step DWI-to-T1 linear registration (Jordi Huguet, BBRC, 2025-01-28)
+                    fslmaths "${outdir}/wm.nii.gz" -thr 0.5 -bin "${outdir}/wm_mask.nii.gz"
+                    flirt -in "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -omat "${outdir}/dti2gm.mat"
+                    flirt -in  "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -cost bbr -wmseg "${outdir}/wm_mask.nii.gz" -init "${outdir}/dti2gm.mat" -omat "${outdir}/dti2struct.mat"  -out "${outdir}/b0_2_${smri}_v2.nii.gz"
+                    ### [Optional] Save registrations of the b0, FA and MD maps for QC-related purposes
+                    flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/b0.nii.gz" -out "${outdir}/b0_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
+                    flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -out "${outdir}/dti_FA_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
+                    flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_MD.nii.gz" -out "${outdir}/dti_MD_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
+                else
+				    flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -dof 6 -out "${outdir}/dti_FA_2_${smri}.nii.gz" -omat "${outdir}/dti2struct.mat"
+                fi
    			elif [ $weight == "2" ]; then #if it's a T2, it's better to align the b0 volume rather than the FA, because the b0 contrast is more similar to T2.
 	      			if [ -f "${outdir}/b0.nii.gz" ]; then
 	      			flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/b0.nii.gz" -dof 6 -out "${outdir}/b0_2_${smri}.nii.gz" -omat "${outdir}/dti2struct.mat"
