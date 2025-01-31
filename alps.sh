@@ -243,10 +243,6 @@ if [ $skip -eq 0 ]; then
 	cd "${outdir}"
 
 	## Denoising and/or unringing
-	nvols1="$(fslnvols $dwi1)"
-    if [ $nvols1 -le 1 ]; then
-        echo "WARNING! Cannot run dwidenoise on 3D data"
-    fi
 	if [ $denoise -ne 0 ]; then
 		if [ $denoise -eq 1 ]; then
 			echo "Denoising and unringing $dwi1"
@@ -302,9 +298,10 @@ if [ $skip -eq 0 ]; then
 		if [ "$dwi2" ]; then
 			echo "2nd DWI is available"
 			#if [[ "$dwi2" == *".nii" ]]; then gzip "$dwi2"; fi
-			nvols2="$(fslnvols $dwi2)"
-			if [ $nvols2 -le 1 ]; then
-				echo "WARNING! Cannot run dwidenoise on 3D data"
+			nvols="$(fslnvols $dwi2)"
+			if [ $nvols -le 1 ]; then
+				echo "WARNING! Cannot run dwidenoise on 3D data, appending 2x $dwi2"
+				fslmerge -t "$dwi2" "$dwi2" "$dwi2"
 			fi
 			if [ $denoise -eq 1 ]; then
 				echo "Denoising and unringing $dwi2"
@@ -322,7 +319,9 @@ if [ $skip -eq 0 ]; then
 			elif [ $denoise -eq 0 ]; then
 				dwi2_processed="${dwi2}"
 			fi
-			
+			if [ $nvols -le 1 ]; then
+			    fslroi "$dwi2_processed" "$dwi2_processed" 0 1
+			fi
 			##
    			if [ "$json2" ]; then
 				#scanner2=$(jq -r '.Manufacturer' "$json2")
@@ -539,7 +538,7 @@ then
 			#flirt -ref "${outdir}/${smri}_brain.nii.gz" -in "${outdir}/dti_FA.nii.gz" -dof 6 -omat "${outdir}/dti2struct.mat"
    			if [ $weight == "1" ]; then
    				if [ -f "${outdir}/wm.nii.gz" ] && [ -f "${outdir}/gm.nii.gz" ] && [ -f "${outdir}/b0.nii.gz" ]; then
-   					### Perform a enhanced two-step DWI-to-T1 linear registration (Jordi Huguet, BBRC, 2025-01-28)
+   					### Perform an enhanced two-step DWI-to-T1 linear registration (Jordi Huguet, BBRC, 2025-01-28)
    					echo "gm.nii.gz is available for enhanced registration"
    					echo "wm.nii.gz is available for enhanced registration"
    					echo "Enhanced two-step linear (flirt) registration to structural T1w image space";
