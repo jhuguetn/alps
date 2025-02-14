@@ -544,7 +544,7 @@ then
    					echo "Enhanced two-step linear (flirt) registration to structural T1w image space";
 					fslmaths "${outdir}/wm.nii.gz" -thr 0.5 -bin "${outdir}/wm_mask.nii.gz"
 					flirt -in "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -omat "${outdir}/dti2gm.mat"
-					flirt -in  "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -cost bbr -wmseg "${outdir}/wm_mask.nii.gz" -init "${outdir}/dti2gm.mat" -omat "${outdir}/dti2struct.mat"  -out "${outdir}/b0_2_${smri}_v2.nii.gz"
+					flirt -in  "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -cost bbr -wmseg "${outdir}/wm_mask.nii.gz" -init "${outdir}/dti2gm.mat" -omat "${outdir}/dti2struct.mat"
 					### [Optional] Save registrations of the b0, FA and MD maps for QC-related purposes
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/b0.nii.gz" -out "${outdir}/b0_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -out "${outdir}/dti_FA_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
