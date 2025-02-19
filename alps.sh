@@ -537,14 +537,13 @@ then
 			#bet2 "${outdir}/${smri}.nii.gz" "${outdir}/${smri}_brain" -m #this is used for flirt dti2struct and flirt struct2template
 			#flirt -ref "${outdir}/${smri}_brain.nii.gz" -in "${outdir}/dti_FA.nii.gz" -dof 6 -omat "${outdir}/dti2struct.mat"
    			if [ $weight == "1" ]; then
-   				if [ -f "${outdir}/wm.nii.gz" ] && [ -f "${outdir}/gm.nii.gz" ] && [ -f "${outdir}/b0.nii.gz" ]; then
-   					### Perform an enhanced two-step DWI-to-T1 linear registration (Jordi Huguet, BBRC, 2025-01-28)
-   					echo "gm.nii.gz is available for enhanced registration"
+   				if [ -f "${outdir}/wm.nii.gz" ] && [ -f "${outdir}/b0.nii.gz" ]; then
+   					### Perform an enhanced two-step DWI-to-T1 linear registration using epi_reg (Jordi Huguet, BBRC, 2025-02-19)
    					echo "wm.nii.gz is available for enhanced registration"
-   					echo "Enhanced two-step linear (flirt) registration to structural T1w image space";
-					fslmaths "${outdir}/wm.nii.gz" -thr 0.5 -bin "${outdir}/wm_mask.nii.gz"
-					flirt -in "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -omat "${outdir}/dti2gm.mat"
-					flirt -in  "${outdir}/b0.nii.gz" -ref "${outdir}/gm.nii.gz" -dof 6 -cost bbr -wmseg "${outdir}/wm_mask.nii.gz" -init "${outdir}/dti2gm.mat" -omat "${outdir}/dti2struct.mat"
+   					echo "b0.nii.gz is available for enhanced registration"
+   					echo "Enhanced two-step linear (epi_reg) registration to structural T1w image space";
+					bet "${outdir}/${smri}.nii.gz" "${outdir}/${smri}_bet.nii.gz" -R -f 0.2 -g 0
+					epi_reg -v --epi="${outdir}/b0.nii.gz" --t1="${outdir}/${smri}.nii.gz" --t1brain="${outdir}/${smri}_bet.nii.gz" --wmseg="${outdir}/wm.nii.gz" --out="${outdir}/dti2struct.nii.gz"
 					### [Optional] Save registrations of the b0, FA and MD maps for QC-related purposes
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/b0.nii.gz" -out "${outdir}/b0_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -out "${outdir}/dti_FA_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
