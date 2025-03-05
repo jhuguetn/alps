@@ -542,9 +542,9 @@ then
    					echo "wm.nii.gz is available for enhanced registration"
    					echo "b0.nii.gz is available for enhanced registration"
    					echo "Enhanced two-step linear (epi_reg) registration to structural T1w image space";
-					bet "${outdir}/${smri}.nii.gz" "${outdir}/${smri}_bet.nii.gz" -R -f 0.2 -g 0
+					bet "${outdir}/${smri}.nii.gz" "${outdir}/${smri}_bet.nii.gz" -R -f 0.2 -g 0 -B
 					epi_reg -v --epi="${outdir}/b0.nii.gz" --t1="${outdir}/${smri}.nii.gz" --t1brain="${outdir}/${smri}_bet.nii.gz" --wmseg="${outdir}/wm.nii.gz" --out="${outdir}/dti2struct.nii.gz"
-					### [Optional] Save registrations of the b0, FA and MD maps for QC-related purposes
+					### [Optional] Save registrations of the b0, FA and MD maps for QC-related purposes  (Jordi Huguet, BBRC, 2025-02-19)
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/b0.nii.gz" -out "${outdir}/b0_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_FA.nii.gz" -out "${outdir}/dti_FA_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
 					flirt -ref "${outdir}/${smri}.nii.gz" -in "${outdir}/dti_MD.nii.gz" -out "${outdir}/dti_MD_2_${smri}.nii.gz" -applyxfm -init "${outdir}/dti2struct.mat"
